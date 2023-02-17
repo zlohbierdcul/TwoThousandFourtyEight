@@ -1,0 +1,10 @@
+# output
+target
+out
+
+# IntelliJ
+.idea
+TwoThousandFortyEight.iml
+
+# Mac
+.DS_Store
