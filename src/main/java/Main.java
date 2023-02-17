@@ -1,6 +1,7 @@
 package main.java;
 
 import main.java.domain.GameField;
+import main.java.ui.GUI;
 
 public class Main {
     public static void main(String[] args) {
@@ -12,6 +13,8 @@ public class Main {
         gameField.moveBlocksDown();
         System.out.println(gameField);
 
+        GUI mainGUI = new GUI();
+        mainGUI.setVisible(true);
 
 //        for (int i = 0; i < 5; i++) {
 //            if (i % 2 == 0) {
