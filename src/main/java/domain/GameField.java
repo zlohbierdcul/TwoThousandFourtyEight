@@ -1,6 +1,6 @@
-package main.java.domain;
+package domain;
 
-import main.java.domain.util.Vector2D;
+import domain.util.Vector2D;
 
 import java.util.*;
 

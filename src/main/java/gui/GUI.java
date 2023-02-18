@@ -1,6 +1,6 @@
-package main.java.gui;
+package gui;
 
-import main.java.facade.GameSystem;
+import facade.GameSystem;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -107,11 +107,19 @@ public class GUI extends JFrame {
                         int keyCode = e.getKeyCode();
                         if (!pressed) {
                             switch (keyCode) {
-                                case KeyEvent.VK_UP -> gameSystem.moveUp();
-                                case KeyEvent.VK_DOWN -> gameSystem.moveDown();
-                                case KeyEvent.VK_LEFT -> gameSystem.moveLeft();
-                                case KeyEvent.VK_RIGHT -> gameSystem.moveRight();
-                                default -> {
+                                case KeyEvent.VK_UP:
+                                    gameSystem.moveUp();
+                                    break;
+                                case KeyEvent.VK_DOWN:
+                                    gameSystem.moveDown();
+                                    break;
+                                case KeyEvent.VK_LEFT:
+                                    gameSystem.moveLeft();
+                                    break;
+                                case KeyEvent.VK_RIGHT:
+                                    gameSystem.moveRight();
+                                    break;
+                                default: {
                                     return;
                                 }
                             }

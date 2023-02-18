@@ -1,6 +1,6 @@
-package main.java.facade;
+package facade;
 
-import main.java.domain.GameField;
+import domain.GameField;
 
 public class GameSystem {
 

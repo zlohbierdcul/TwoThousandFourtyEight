@@ -1,6 +1,5 @@
-package main.java;
 
-import main.java.gui.GUI;
+import gui.GUI;
 
 public class Main {
     public static void main(String[] args) {

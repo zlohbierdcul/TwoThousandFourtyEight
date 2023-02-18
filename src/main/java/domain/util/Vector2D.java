@@ -1,4 +1,4 @@
-package main.java.domain.util;
+package domain.util;
 
 public class Vector2D {
 
