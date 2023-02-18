@@ -1,10 +1,8 @@
-package main.java.ui;
+package main.java.gui;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.awt.geom.Area;
 import java.awt.geom.RoundRectangle2D;
 
@@ -31,7 +29,8 @@ public class CustomButton extends JButton {
 
     private ButtonStyle style = ButtonStyle.PRIMARY;
     private ButtonColor currentStyle = new ButtonColor(ButtonStyle.PRIMARY);
-    private int round = 5;
+    private Color backgroundColor;
+    private int round = 10;
 
     public CustomButton(String s) {
         setContentAreaFilled(false);
@@ -39,6 +38,17 @@ public class CustomButton extends JButton {
         setForeground(Color.WHITE);
         setSize(30, 25);
         setText(s);
+        backgroundColor = currentStyle.background;
+    }
+
+    public CustomButton(String s, Color c) {
+        setContentAreaFilled(false);
+        setBorder(new EmptyBorder(8, 8, 8, 8));
+        setForeground(Color.WHITE);
+        setSize(30, 25);
+        setText(s);
+        this.backgroundColor = c;
+
     }
 
 
@@ -51,17 +61,17 @@ public class CustomButton extends JButton {
         int width = getWidth();
         int height = getHeight();
         Area area = new Area(new RoundRectangle2D.Double(x, y, width, height, round, round));
-        g2.setColor(currentStyle.background);
+        g2.setColor(backgroundColor);
         g2.fill(area);
         area.subtract(new Area(new RoundRectangle2D.Double(x, y, width, height - 2, round, round)));
-        g2.setColor(currentStyle.backgroundHover);
+        g2.setColor(backgroundColor);
         g2.fill(area);
         g2.dispose();
         super.paintComponent(grphcs);
     }
 
     public enum ButtonStyle {
-        PRIMARY(new Color(0, 172, 126), new Color(238, 238, 238), new Color(2, 111, 82), new Color(4, 205, 151)),
+        PRIMARY(new Color(223, 194, 26), new Color(51, 51, 51), new Color(193, 181, 70), new Color(234, 225, 121)),
         SECONDARY(new Color(203, 209, 219), new Color(58, 70, 81), new Color(81, 92, 108), new Color(230, 239, 255)),
         DESTRUCTIVE(new Color(255, 138, 48), new Color(238, 238, 238), new Color(198, 86, 0), new Color(255, 161, 90));
 
@@ -75,6 +85,10 @@ public class CustomButton extends JButton {
         private Color foreground;
         private Color backgroundHover;
         private Color backgroundPress;
+
+        public void setBackground(Color background) {
+            this.background = background;
+        }
     }
 
     protected class ButtonColor {

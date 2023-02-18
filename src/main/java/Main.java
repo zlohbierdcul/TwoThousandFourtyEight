@@ -1,17 +1,16 @@
 package main.java;
 
-import main.java.domain.GameField;
-import main.java.ui.GUI;
+import main.java.gui.GUI;
 
 public class Main {
     public static void main(String[] args) {
-        GameField gameField = new GameField(4);
-        gameField.createField();
-        System.out.println(gameField);
-        gameField.moveBlocksUp();
-        System.out.println(gameField);
-        gameField.moveBlocksDown();
-        System.out.println(gameField);
+//        GameField gameField = new GameField(4);
+//        gameField.createField();
+//        System.out.println(gameField);
+//        gameField.moveBlocksUp();
+//        System.out.println(gameField);
+//        gameField.moveBlocksDown();
+//        System.out.println(gameField);
 
         GUI mainGUI = new GUI();
         mainGUI.setVisible(true);

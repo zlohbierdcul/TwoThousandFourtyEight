@@ -2,42 +2,41 @@ package main.java.domain;
 
 import main.java.domain.util.Vector2D;
 
-import java.util.HashMap;
-import java.util.Optional;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
 public class GameField {
 
-    private HashMap<Vector2D, Integer> field;
+    private volatile HashMap<Vector2D, Integer> field;
     private final int size;
 
     public GameField(int size) {
         this.size = size;
     }
 
-    public void createField() {
+    public void startGame() {
         this.field = createGameField();
     }
 
     private HashMap<Vector2D, Integer> createGameField() {
         field = new HashMap<>();
+        for (int y = 0; y < this.size; y++) {
+            for (int x = 0; x < this.size; x++) {
+                field.put(new Vector2D(x,y), null);
+            }
+        }
 
-        field.put(new Vector2D(0,0), 2);
-        field.put(new Vector2D(0,1), 2);
-        field.put(new Vector2D(0,2), 2);
-        field.put(new Vector2D(0,3), 2);
-
-//        for (int i = 0; i < this.size; i++) {
-//            generateRandomBlock();
-//        }
+        for (int i = 0; i < this.size; i++) {
+            generateRandomBlock();
+        }
         return field;
     }
 
-    public Integer getValue(Vector2D v) {
-        Optional<Vector2D> vector2D = getFieldVector(v);
+    public synchronized Integer getValue(Vector2D v) {
+        return getFieldVector(v).map(d -> this.field.get(d)).orElse(null);
+    }
 
-        return vector2D.map(d -> this.field.get(d)).orElse(null);
+    public Integer getValue(int x, int y) {
+        return getValue(new Vector2D(x, y));
     }
 
     public void setValue(Vector2D v, Integer i) {
@@ -63,21 +62,28 @@ public class GameField {
         return getValue(vector2D) == null;
     }
 
-    public void generateRandomBlock() {
+    public boolean generateRandomBlock() {
+
         Random random = new Random();
         boolean notFinished = true;
+        Vector2D testVector = new Vector2D();
+        int trys = 0;
 
         while (notFinished) {
-            int x = random.nextInt(0, this.size);
-            int y = random.nextInt(0, this.size);
+            trys++;
+            if (trys > 10000) return false;
+            int x = random.nextInt(0, size);
+            int y = random.nextInt(0, size);
 
-            Vector2D testVector = new Vector2D(x,y);
+            testVector = new Vector2D(x,y);
 
             if (isEmpty(testVector)) {
-                this.field.put(testVector, Math.random() > 0.5 ? 2: 4);
+                setValue(testVector, Math.random() > 0.5 ? 2: 4);
                 notFinished = false;
             }
         }
+        System.out.println(testVector);
+        return true;
     }
 
     public void moveBlocksLeft() {
@@ -220,6 +226,10 @@ public class GameField {
             }
         }
         setValue(new Vector2D(row, start), null);
+    }
+
+    public boolean isFinished() {
+        return this.field.values().stream().noneMatch(Objects::isNull);
     }
 
     @Override
