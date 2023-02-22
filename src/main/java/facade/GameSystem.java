@@ -2,6 +2,7 @@ package facade;
 
 import domain.GameField;
 import domain.util.Vector2D;
+import org.graalvm.collections.Pair;
 
 import java.util.Collection;
 import java.util.List;
@@ -43,20 +44,23 @@ public class GameSystem {
         return this.field.getScore();
     }
 
-    public void moveLeft() {
-        this.field.moveBlocksLeft();
+    public Pair<Boolean,List<Vector2D>> moveLeft() {
+        Pair<Boolean, List<Vector2D>> booleanListPair = this.field.moveBlocksLeft();
+        return Pair.create(booleanListPair.getLeft(), booleanListPair.getRight());
     }
 
-    public void moveRight() {
-        this.field.moveBlocksRight();
+    public Pair<Boolean,List<Vector2D>> moveRight() {
+        return this.field.moveBlocksRight();
     }
 
-    public void moveUp()  {
-        this.field.moveBlocksUp();
+    public Pair<Boolean,List<Vector2D>> moveUp()  {
+        Pair<Boolean, List<Vector2D>> booleanListPair = this.field.moveBlocksUp();
+        return Pair.create(booleanListPair.getLeft(), booleanListPair.getRight());
     }
 
-    public List<Vector2D> moveDown() {
-        return  this.field.moveBlocksDown().getRight();
+    public Pair<Boolean,List<Vector2D>> moveDown() {
+        Pair<Boolean, List<Vector2D>> booleanListPair = this.field.moveBlocksDown();
+        return Pair.create(booleanListPair.getLeft(), booleanListPair.getRight());
     }
 
     private boolean hasNoMoves() throws InterruptedException {
@@ -67,7 +71,7 @@ public class GameSystem {
 
         Thread checkUpThred = new Thread(() -> {
             System.out.println("T1");
-            if (this.field.clone().moveBlocksUp()) checkUp.set(true);
+            if (this.field.clone().moveBlocksUp().getLeft()) checkUp.set(true);
         });
 
         Thread checkDownThred = new Thread(() -> {
@@ -77,12 +81,12 @@ public class GameSystem {
 
         Thread checkLeftThred = new Thread(() -> {
             System.out.println("T3");
-            if (this.field.clone().moveBlocksLeft()) checkUp.set(true);
+            if (this.field.clone().moveBlocksLeft().getLeft()) checkUp.set(true);
         });
 
         Thread checkRightThred = new Thread(() -> {
             System.out.println("T4");
-            if (this.field.clone().moveBlocksRight()) checkUp.set(true);
+            if (this.field.clone().moveBlocksRight().getLeft()) checkUp.set(true);
         });
 
         checkUpThred.start();

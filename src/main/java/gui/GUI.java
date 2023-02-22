@@ -2,6 +2,7 @@ package gui;
 
 import domain.util.Vector2D;
 import facade.GameSystem;
+import org.graalvm.collections.Pair;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -20,6 +21,7 @@ import java.util.List;
 public class GUI extends JFrame {
 
     private final int SIZE = 4;
+    private List<CustomButton> buttonsToShake = new ArrayList<>();
     private HashMap<Vector2D, CustomButton> gameBlocks = new HashMap<>();
     private JTextPane titlePane = new JTextPane();
     private JTextPane scorePane = new JTextPane();
@@ -38,7 +40,7 @@ public class GUI extends JFrame {
     private CustomButton menuButton;
     private CustomButton retryButton;
     private JTextPane gameOverTextPane = new JTextPane();
-    private AbstractButton resetButton = new CustomButton("Reset Scores");
+    private CustomButton resetButton = new CustomButton("Reset Scores");
 
     public GUI() {
 
@@ -144,35 +146,50 @@ public class GUI extends JFrame {
                     @Override
                     public void keyPressed(KeyEvent e) {
                         int keyCode = e.getKeyCode();
+                        System.out.println(keyCode);
                         List<Vector2D> vectors = new ArrayList<>();
-                        HashMap<Vector2D, Integer> oldfield = (HashMap<Vector2D, Integer>) gameSystem.getGameField().getField().clone();
+                        Pair<Boolean, List<Vector2D>> pair = null;
                         if (!pressed) {
                             switch (keyCode) {
                                 case KeyEvent.VK_UP:
-                                    gameSystem.moveUp();
+                                    pair = gameSystem.moveUp();
+                                    vectors.addAll(pair.getRight());
                                     break;
                                 case KeyEvent.VK_DOWN:
-                                    vectors.addAll(gameSystem.moveDown());
+                                    pair = gameSystem.moveDown();
+                                    vectors.addAll(pair.getRight());
                                     break;
                                 case KeyEvent.VK_LEFT:
-                                    gameSystem.moveLeft();
+                                    pair = gameSystem.moveLeft();
+                                    vectors.addAll(pair.getRight());
                                     break;
                                 case KeyEvent.VK_RIGHT:
-                                    gameSystem.moveRight();
+                                    pair = gameSystem.moveRight();
+                                    vectors.addAll(pair.getRight());
                                     break;
                                 default: {
                                     return;
                                 }
                             }
-                            if (gameSystem.getGameField().hasPossibleMoves()) {
-                                if (gameSystem.spawnRandomBlock()) {
+                            System.out.println(pair);
+                            if (gameSystem.getGameField().hasPossibleMoves() && pair.getLeft()) {
+                                gameSystem.spawnRandomBlock();
+                                Thread t1 = new Thread(() -> {
                                     gameFrame(SIZE, vectors);
-                                } else {
-                                    stopGame();
-                                    gameoverFrame();
-                                    removeKeyListener(this);
-                                }
+                                });
+                                t1.start();
+//                                Thread t2 = new Thread(() -> {
+//                                    gameFrame(SIZE, new ArrayList<>());;
+//                                });
+//                                t2.start();
+
+
+                            } else {
+                                stopGame();
+                                gameoverFrame();
+                                removeKeyListener(this);
                             }
+
                         }
                     }
 
@@ -375,10 +392,13 @@ public class GUI extends JFrame {
         this.getContentPane().setVisible(false);
         this.getContentPane().add(gameContainer);
         this.getContentPane().setVisible(true);
+
+        shakeButtons();
     }
 
     private JPanel drawGameAndScorePanel(List<Vector2D> vectors) {
-        System.out.println(vectors);
+
+
         // ScorePane setup
         SimpleAttributeSet attributeSet = new SimpleAttributeSet();
         StyleConstants.setBold(attributeSet, true);
@@ -432,10 +452,10 @@ public class GUI extends JFrame {
 
 
 
-                gamePanel.add(newButton);
                 if (vectors.stream().anyMatch(v -> v.equals(new Vector2D(finalX, finalY)))) {
-                    shakeButton(newButton);
+                    buttonsToShake.add(newButton);
                 }
+                gamePanel.add(newButton);
             }
         }
 
@@ -445,52 +465,44 @@ public class GUI extends JFrame {
     }
 
 
-    private void shakeButton(AbstractButton button) {
+    private void shakeButton(CustomButton button) {
         final Point point = button.getLocation();
-        final int delay = 40;
+        final int delay = 30;
         Runnable r = new Runnable() {
             @Override
             public void run() {
                 for (int i = 0; i < 3; i++) {
                     try {
-
-                        button.setBorder(BorderFactory.createLineBorder(button.getBackground(), 1, true));
-                        button.setMaximumSize(new Dimension(105, 105));
+                        moveButton(button, new Point(point.x + 2, point.y + 1));
+                        moveButton(button, point);
                         Thread.sleep(delay);
-                        button.setBorder(BorderFactory.createLineBorder(button.getBackground(), 3, true));
-                        button.setMaximumSize(new Dimension(106, 106));
+                        moveButton(button, new Point(point.x - 2, point.y - 1));
                         Thread.sleep(delay);
-                        button.setBorder(BorderFactory.createLineBorder(button.getBackground(), 2, true));
-                        button.setMaximumSize(new Dimension(103, 103));
+                        moveButton(button, point);
                         Thread.sleep(delay);
-                        button.setBorder(BorderFactory.createLineBorder(button.getBackground(), 1, true));
-                        button.setMaximumSize(new Dimension(100, 100));
-                        Thread.sleep(delay);
-                        button.setBorder(null);
-
-//                        moveButton(button, new Point(point.x + 2, point.y));
-//                        moveButton(button, point);
-//                        Thread.sleep(delay);
-//                        moveButton(button, new Point(point.x - 2, point.y));
-//                        Thread.sleep(delay);
-//                        moveButton(button, point);
-//                        Thread.sleep(delay);
                     } catch (InterruptedException ex) {
                         ex.printStackTrace();
                     }
+                    }
                 }
-            }
-        };
-        Thread t = new Thread(r);
-        t.start();
-    }
+            };
+            Thread t = new Thread(r);
+            t.start();
+        }
 
-    private void moveButton(AbstractButton button, final Point p) {
+    private void moveButton(CustomButton button, final Point p) {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
                 button.setLocation(p);
             }
         });
+    }
+
+    private void shakeButtons() {
+        System.out.println(buttonsToShake);
+        for (CustomButton b: buttonsToShake) {
+            shakeButton(b);
+        }
     }
 }

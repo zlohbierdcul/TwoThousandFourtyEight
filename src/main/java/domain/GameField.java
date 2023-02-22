@@ -115,18 +115,22 @@ public class GameField implements Cloneable {
         return true;
     }
 
-    public boolean moveBlocksLeft() {
+    public Pair<Boolean, List<Vector2D>> moveBlocksLeft() {
         List<Boolean> movedRows = new ArrayList<>();
+        List<Vector2D> vectors = new ArrayList<>();
         for (int i = 0; i < this.size; i++) {
-            boolean moved = moveRowLeft(i);
+            Pair<Boolean, List<Vector2D>> pair = moveRowLeft(i);
+            boolean moved = pair.getLeft();
             movedRows.add(moved);
+            vectors.addAll(pair.getRight());
             if (moved) moveRowLeftNoMerge(i);
 
         }
-        return movedRows.stream().anyMatch(aBoolean -> true);
+        return Pair.create(movedRows.stream().anyMatch(Boolean::booleanValue), vectors);
     }
 
-    private boolean moveRowLeft(int y) {
+    private Pair<Boolean, List<Vector2D>> moveRowLeft(int y) {
+        List<Vector2D> vectors = new ArrayList<>();
         boolean moved = false;
         for (int x = this.size - 1; x > 0; x--) {
             Vector2D firstVector = new Vector2D(x,y);
@@ -139,6 +143,7 @@ public class GameField implements Cloneable {
                     x--;
                     score += Math.sqrt(getValue(secondVector));
                     moved = true;
+                    vectors.add(secondVector);
                 }
             }
 
@@ -147,7 +152,7 @@ public class GameField implements Cloneable {
                 moved = true;
             }
         }
-        return moved;
+        return Pair.create(moved, vectors);
     }
 
     private void moveRowLeftNoMerge(int y) {
@@ -171,18 +176,22 @@ public class GameField implements Cloneable {
         setValue(new Vector2D(end, column), null);
     }
 
-    public boolean moveBlocksRight() {
+    public Pair<Boolean, List<Vector2D>> moveBlocksRight() {
         List<Boolean> movedRows = new ArrayList<>();
+        List<Vector2D> vectors = new ArrayList<>();
         for (int i = 0; i < this.size; i++) {
-            boolean moved = moveRowRight(i);
+            Pair<Boolean, List<Vector2D>> pair = moveRowRight(i);
+            boolean moved = pair.getLeft();
             movedRows.add(moved);
+            vectors.addAll(pair.getRight());
             if (moved) moveRowRightNoMerge(i);
 
         }
-        return movedRows.stream().anyMatch(aBoolean -> true);
+        return Pair.create(movedRows.stream().anyMatch(Boolean::booleanValue), vectors);
     }
 
-    private boolean moveRowRight(int y) {
+    private Pair<Boolean, List<Vector2D>> moveRowRight(int y) {
+        List<Vector2D> vectors = new ArrayList<>();
         boolean moved = false;
         for (int x = 0; x < this.size - 1; x++) {
             Vector2D firstVector = new Vector2D(x, y);
@@ -195,6 +204,7 @@ public class GameField implements Cloneable {
                     x++;
                     score += Math.sqrt(getValue(secondVector));
                     moved = true;
+                    vectors.add(secondVector);
                 }
             }
 
@@ -203,7 +213,7 @@ public class GameField implements Cloneable {
                 moved = true;
             }
         }
-        return moved;
+        return Pair.create(moved, vectors);
     }
 
     private void moveRowRightNoMerge(int y) {
@@ -229,17 +239,21 @@ public class GameField implements Cloneable {
         setValue(new Vector2D(start, column), null);
     }
 
-    public boolean moveBlocksUp() {
+    public Pair<Boolean, List<Vector2D>> moveBlocksUp() {
         List<Boolean> movedRows = new ArrayList<>();
+        List<Vector2D> vectors = new ArrayList<>();
         for (int i = 0; i < this.size; i++) {
-            boolean moved = moveRowUp(i);
+            Pair<Boolean, List<Vector2D>> pair = moveRowUp(i);
+            boolean moved = pair.getLeft();
             movedRows.add(moved);
+            vectors.addAll(pair.getRight());
             if (moved) moveRowUpNoMerge(i);
         }
-        return movedRows.stream().anyMatch(aBoolean -> true);
+        return Pair.create(movedRows.stream().anyMatch(Boolean::booleanValue), vectors);
     }
 
-    private boolean moveRowUp(int x) {
+    private Pair<Boolean, List<Vector2D>> moveRowUp(int x) {
+        List<Vector2D> vectors = new ArrayList<>();
         boolean moved = false;
         for (int y = this.size - 1; y > 0; y--) {
             Vector2D firstVector = new Vector2D(x, y);
@@ -252,6 +266,7 @@ public class GameField implements Cloneable {
                     y--;
                     score += Math.sqrt(getValue(secondVector));
                     moved = true;
+                    vectors.add(secondVector);
                 }
             }
 
@@ -260,7 +275,7 @@ public class GameField implements Cloneable {
                 moved = true;
             }
         }
-        return moved;
+        return Pair.create(moved, vectors);
     }
 
     private void moveRowUpNoMerge(int x) {
@@ -294,7 +309,8 @@ public class GameField implements Cloneable {
             vectors.addAll(pair.getRight());
             if (moved) moveRowDownNoMerge(i, vectors);
         }
-        return Pair.create(movedRows.stream().anyMatch(aBoolean -> true), vectors);
+        System.out.println(movedRows);
+        return Pair.create(movedRows.stream().anyMatch(Boolean::booleanValue), vectors);
     }
 
     private Pair<Boolean, List<Vector2D>> moveRowDown(int x) {
@@ -331,11 +347,12 @@ public class GameField implements Cloneable {
             if (!isEmpty(firstVector) && isEmpty(secondVector)) {
                 moveSubListDown(0, y, x);
 
-                int finalY = y;
-                List<Vector2D> movedVector = vectors.stream().filter(v -> v.equals(new Vector2D(x, finalY))).toList();
+                List<Vector2D> movedVector = vectors.stream().filter(v -> v.equals(firstVector)).toList();
                 if (movedVector.size() > 0) {
+                    System.out.println("movedVector: " + movedVector);
+                    System.out.println("newVector: (" + x + ", " + y + ")" );
                     vectors.remove(movedVector.get(0));
-                    vectors.add(new Vector2D(x,y));
+                    vectors.add(secondVector);
                 }
             }
         }
