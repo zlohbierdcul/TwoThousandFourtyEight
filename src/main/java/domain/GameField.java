@@ -4,17 +4,32 @@ import domain.util.Vector2D;
 
 import java.util.*;
 
-public class GameField {
+public class GameField implements Cloneable {
 
     private volatile HashMap<Vector2D, Integer> field;
     private final int size;
+    private int score = 0;
+    private boolean isStopped = false;
+    private int spawns;
 
     public GameField(int size) {
         this.size = size;
     }
 
+    public void setField(HashMap<Vector2D, Integer> field) {
+        this.field = field;
+    }
+
+    public HashMap<Vector2D, Integer> getField() {
+        return field;
+    }
+
     public void startGame() {
         this.field = createGameField();
+    }
+
+    public void stopGame() {
+        isStopped = true;
     }
 
     private HashMap<Vector2D, Integer> createGameField() {
@@ -25,10 +40,17 @@ public class GameField {
             }
         }
 
-        for (int i = 0; i < this.size; i++) {
-            generateRandomBlock();
-        }
+        this.setValue(new Vector2D(1,0), 2);
+        this.setValue(new Vector2D(3,1), 2);
+//        this.setValue(new Vector2D(2,0), 2);
+//        for (int i = 0; i < this.size / 2; i++) {
+//            generateRandomBlock();
+//        }
         return field;
+    }
+
+    public int getScore() {
+        return score;
     }
 
     public synchronized Integer getValue(Vector2D v) {
@@ -63,6 +85,7 @@ public class GameField {
     }
 
     public boolean generateRandomBlock() {
+        System.out.println(spawns++);
 
         Random random = new Random();
         boolean notFinished = true;
@@ -82,17 +105,19 @@ public class GameField {
                 notFinished = false;
             }
         }
-        System.out.println(testVector);
         return true;
     }
 
-    public void moveBlocksLeft() {
+    public boolean moveBlocksLeft() {
+        List<Boolean> movedRows = new ArrayList<>();
         for (int i = 0; i < this.size; i++) {
-            moveRowLeft(i);
+            movedRows.add(moveRowLeft(i));
         }
+        return movedRows.stream().anyMatch(aBoolean -> true);
     }
 
-    private void moveRowLeft(int y) {
+    private boolean moveRowLeft(int y) {
+        boolean moved = false;
         for (int x = this.size - 1; x > 0; x--) {
             Vector2D firstVector = new Vector2D(x,y);
             Vector2D secondVector = new Vector2D(x-1,y);
@@ -101,13 +126,18 @@ public class GameField {
                 if (getValue(firstVector).equals(getValue(secondVector))) {
                     setValue(secondVector, getValue(secondVector) * 2);
                     moveSubListLeft(x + 1, this.size - 1, y);
+                    x--;
+                    score += Math.sqrt(getValue(secondVector));
+                    moved = true;
                 }
             }
 
             if (!isEmpty(firstVector) && isEmpty(secondVector)) {
                 moveSubListLeft(x, this.size - 1, y);
+                moved = true;
             }
         }
+        return moved;
     }
 
     private void moveSubListLeft(int start, int end, int column) {
@@ -121,13 +151,16 @@ public class GameField {
         setValue(new Vector2D(end, column), null);
     }
 
-    public void moveBlocksRight() {
+    public boolean moveBlocksRight() {
+        List<Boolean> movedRows = new ArrayList<>();
         for (int i = 0; i < this.size; i++) {
-            moveRowRight(i);
+            movedRows.add(moveRowRight(i));
         }
+        return movedRows.stream().anyMatch(aBoolean -> true);
     }
 
-    private void moveRowRight(int y) {
+    private boolean moveRowRight(int y) {
+        boolean moved = false;
         for (int x = 0; x < this.size - 1; x++) {
             Vector2D firstVector = new Vector2D(x, y);
             Vector2D secondVector = new Vector2D(x + 1,y);
@@ -136,13 +169,18 @@ public class GameField {
                 if (getValue(firstVector).equals(getValue(secondVector))) {
                     setValue(secondVector, getValue(secondVector) * 2);
                     moveSubListRight(0, x - 1, y);
+                    x++;
+                    score += Math.sqrt(getValue(secondVector));
+                    moved = true;
                 }
             }
 
             if (!isEmpty(firstVector) && isEmpty(secondVector)) {
                 moveSubListRight(0, x, y);
+                moved = true;
             }
         }
+        return moved;
     }
 
     private void moveSubListRight(int start, int end, int column) {
@@ -158,13 +196,16 @@ public class GameField {
         setValue(new Vector2D(start, column), null);
     }
 
-    public void moveBlocksUp() {
+    public boolean moveBlocksUp() {
+        List<Boolean> movedRows = new ArrayList<>();
         for (int i = 0; i < this.size; i++) {
-            moveRowUp(i);
+            movedRows.add(moveRowUp(i));
         }
+        return movedRows.stream().anyMatch(aBoolean -> true);
     }
 
-    private void moveRowUp(int x) {
+    private boolean moveRowUp(int x) {
+        boolean moved = false;
         for (int y = this.size - 1; y > 0; y--) {
             Vector2D firstVector = new Vector2D(x, y);
             Vector2D secondVector = new Vector2D(x,y - 1);
@@ -173,13 +214,18 @@ public class GameField {
                 if (getValue(firstVector).equals(getValue(secondVector))) {
                     setValue(secondVector, getValue(secondVector) * 2);
                     moveSubListUp(y + 1, this.size - 1, x);
+                    y--;
+                    score += Math.sqrt(getValue(secondVector));
+                    moved = true;
                 }
             }
 
             if (!isEmpty(firstVector) && isEmpty(secondVector)) {
                 moveSubListUp(y, this.size - 1, x);
+                moved = true;
             }
         }
+        return moved;
     }
 
     private void moveSubListUp(int start, int end, int row) {
@@ -193,13 +239,16 @@ public class GameField {
         setValue(new Vector2D(row, end), null);
     }
 
-    public void moveBlocksDown() {
+    public boolean moveBlocksDown() {
+        List<Boolean> movedRows = new ArrayList<>();
         for (int i = 0; i < this.size; i++) {
-            moveRowDown(i);
+            movedRows.add(moveRowDown(i));
         }
+        return movedRows.stream().anyMatch(aBoolean -> true);
     }
 
-    private void moveRowDown(int x) {
+    private boolean moveRowDown(int x) {
+        boolean moved = false;
         for (int y = 0; y < this.size - 1; y++) {
             Vector2D firstVector = new Vector2D(x, y);
             Vector2D secondVector = new Vector2D(x,y + 1);
@@ -208,13 +257,18 @@ public class GameField {
                 if (getValue(firstVector).equals(getValue(secondVector))) {
                     setValue(secondVector, getValue(secondVector) * 2);
                     moveSubListDown(0, y - 1, x);
+                    y++;
+                    score += Math.sqrt(getValue(secondVector));
+                    moved = true;
                 }
             }
 
             if (!isEmpty(firstVector) && isEmpty(secondVector)) {
                 moveSubListDown(0, y, x);
+                moved = true;
             }
         }
+        return moved;
     }
 
     private void moveSubListDown(int start, int end, int row) {
@@ -228,9 +282,36 @@ public class GameField {
         setValue(new Vector2D(row, start), null);
     }
 
-    public boolean isFinished() {
-        return this.field.values().stream().noneMatch(Objects::isNull);
+    public boolean hasPossibleMoves() {
+        boolean isPossible = true;
+
+
+
+
+        return isPossible;
     }
+
+    public boolean isFinished() {
+        return !this.hasPossibleMoves() || isStopped;
+    }
+
+    public boolean equals(GameField other) {
+        boolean same = true;
+        for (Vector2D vOther : other.field.keySet()) {
+            if (!same) return false;
+            Integer valueThis = this.field.get(vOther);
+            Integer valueOther = other.field.get(vOther);
+            if (valueThis == null && valueOther == null) continue;
+            if (valueThis == null || valueOther == null) {
+                same = false;
+                continue;
+            }
+            if (!valueThis.equals(valueOther)) same = false;
+        }
+        return same;
+    }
+
+
 
     @Override
     public String toString() {
@@ -259,4 +340,14 @@ public class GameField {
         return sb.toString();
     }
 
+    @Override
+    public GameField clone() {
+        try {
+            GameField clone = (GameField) super.clone();
+            // TODO: copy mutable state here, so the clone can't change the internals of the original
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
+    }
 }

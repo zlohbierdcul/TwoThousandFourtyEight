@@ -47,6 +47,7 @@ public class CustomButton extends JButton {
         setForeground(Color.WHITE);
         setSize(30, 25);
         setText(s);
+        setFocusable(false);
         this.backgroundColor = c;
 
     }
