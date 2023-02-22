@@ -1,6 +1,7 @@
 package domain;
 
 import domain.util.Vector2D;
+import org.graalvm.collections.Pair;
 
 import java.util.*;
 
@@ -40,7 +41,13 @@ public class GameField implements Cloneable {
             }
         }
 
+        this.setValue(new Vector2D(0,0), 2);
         this.setValue(new Vector2D(1,0), 2);
+        this.setValue(new Vector2D(2,0), 2);
+        this.setValue(new Vector2D(3,0), 2);
+        this.setValue(new Vector2D(0,1), 2);
+        this.setValue(new Vector2D(1,1), 2);
+        this.setValue(new Vector2D(2,1), 2);
         this.setValue(new Vector2D(3,1), 2);
 //        this.setValue(new Vector2D(2,0), 2);
 //        for (int i = 0; i < this.size / 2; i++) {
@@ -111,7 +118,10 @@ public class GameField implements Cloneable {
     public boolean moveBlocksLeft() {
         List<Boolean> movedRows = new ArrayList<>();
         for (int i = 0; i < this.size; i++) {
-            movedRows.add(moveRowLeft(i));
+            boolean moved = moveRowLeft(i);
+            movedRows.add(moved);
+            if (moved) moveRowLeftNoMerge(i);
+
         }
         return movedRows.stream().anyMatch(aBoolean -> true);
     }
@@ -140,6 +150,16 @@ public class GameField implements Cloneable {
         return moved;
     }
 
+    private void moveRowLeftNoMerge(int y) {
+        for (int x = this.size - 1; x > 0; x--) {
+            Vector2D firstVector = new Vector2D(x, y);
+            Vector2D secondVector = new Vector2D(x - 1, y);
+            if (!isEmpty(firstVector) && isEmpty(secondVector)) {
+                moveSubListLeft(x, this.size - 1, y);
+            }
+        }
+    }
+
     private void moveSubListLeft(int start, int end, int column) {
         for (int i = start; i <= end; i++) {
             if (getValue(new Vector2D(i, column)) == null) {
@@ -154,7 +174,10 @@ public class GameField implements Cloneable {
     public boolean moveBlocksRight() {
         List<Boolean> movedRows = new ArrayList<>();
         for (int i = 0; i < this.size; i++) {
-            movedRows.add(moveRowRight(i));
+            boolean moved = moveRowRight(i);
+            movedRows.add(moved);
+            if (moved) moveRowRightNoMerge(i);
+
         }
         return movedRows.stream().anyMatch(aBoolean -> true);
     }
@@ -183,6 +206,16 @@ public class GameField implements Cloneable {
         return moved;
     }
 
+    private void moveRowRightNoMerge(int y) {
+        for (int x = 0; x < this.size - 1; x++) {
+            Vector2D firstVector = new Vector2D(x, y);
+            Vector2D secondVector = new Vector2D(x + 1, y);
+            if (!isEmpty(firstVector) && isEmpty(secondVector)) {
+                moveSubListRight(0, x, y);
+            }
+        }
+    }
+
     private void moveSubListRight(int start, int end, int column) {
         for (int i = end; i >= start; i--) {
             if (getValue(new Vector2D(i, column)) == null) {
@@ -199,7 +232,9 @@ public class GameField implements Cloneable {
     public boolean moveBlocksUp() {
         List<Boolean> movedRows = new ArrayList<>();
         for (int i = 0; i < this.size; i++) {
-            movedRows.add(moveRowUp(i));
+            boolean moved = moveRowUp(i);
+            movedRows.add(moved);
+            if (moved) moveRowUpNoMerge(i);
         }
         return movedRows.stream().anyMatch(aBoolean -> true);
     }
@@ -228,6 +263,16 @@ public class GameField implements Cloneable {
         return moved;
     }
 
+    private void moveRowUpNoMerge(int x) {
+        for (int y = this.size - 1; y > 0; y--) {
+            Vector2D firstVector = new Vector2D(x, y);
+            Vector2D secondVector = new Vector2D(x,y - 1);
+            if (!isEmpty(firstVector) && isEmpty(secondVector)) {
+                moveSubListUp(y, this.size - 1, x);
+            }
+        }
+    }
+
     private void moveSubListUp(int start, int end, int row) {
         for (int i = start; i <= end; i++) {
             if (getValue(new Vector2D(row, i)) == null) {
@@ -239,15 +284,21 @@ public class GameField implements Cloneable {
         setValue(new Vector2D(row, end), null);
     }
 
-    public boolean moveBlocksDown() {
+    public Pair<Boolean, List<Vector2D>> moveBlocksDown() {
         List<Boolean> movedRows = new ArrayList<>();
+        List<Vector2D> vectors = new ArrayList<>();
         for (int i = 0; i < this.size; i++) {
-            movedRows.add(moveRowDown(i));
+            Pair<Boolean, List<Vector2D>> pair = moveRowDown(i);
+            boolean moved = pair.getLeft();
+            movedRows.add(moved);
+            vectors.addAll(pair.getRight());
+            if (moved) moveRowDownNoMerge(i, vectors);
         }
-        return movedRows.stream().anyMatch(aBoolean -> true);
+        return Pair.create(movedRows.stream().anyMatch(aBoolean -> true), vectors);
     }
 
-    private boolean moveRowDown(int x) {
+    private Pair<Boolean, List<Vector2D>> moveRowDown(int x) {
+        List<Vector2D> vectors = new ArrayList<>();
         boolean moved = false;
         for (int y = 0; y < this.size - 1; y++) {
             Vector2D firstVector = new Vector2D(x, y);
@@ -260,6 +311,7 @@ public class GameField implements Cloneable {
                     y++;
                     score += Math.sqrt(getValue(secondVector));
                     moved = true;
+                    vectors.add(secondVector);
                 }
             }
 
@@ -268,7 +320,25 @@ public class GameField implements Cloneable {
                 moved = true;
             }
         }
-        return moved;
+
+        return Pair.create(moved, vectors);
+    }
+
+    private void moveRowDownNoMerge(int x, List<Vector2D> vectors) {
+        for (int y = 0; y < this.size - 1; y++) {
+            Vector2D firstVector = new Vector2D(x, y);
+            Vector2D secondVector = new Vector2D(x,y + 1);
+            if (!isEmpty(firstVector) && isEmpty(secondVector)) {
+                moveSubListDown(0, y, x);
+
+                int finalY = y;
+                List<Vector2D> movedVector = vectors.stream().filter(v -> v.equals(new Vector2D(x, finalY))).toList();
+                if (movedVector.size() > 0) {
+                    vectors.remove(movedVector.get(0));
+                    vectors.add(new Vector2D(x,y));
+                }
+            }
+        }
     }
 
     private void moveSubListDown(int start, int end, int row) {

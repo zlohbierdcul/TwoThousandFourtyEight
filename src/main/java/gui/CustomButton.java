@@ -6,6 +6,7 @@ import java.awt.*;
 import java.awt.geom.Area;
 import java.awt.geom.RoundRectangle2D;
 
+
 public class CustomButton extends JButton {
     public ButtonStyle getStyle() {
         return style;
@@ -145,5 +146,4 @@ public class CustomButton extends JButton {
             this.backgroundPress = style.backgroundPress;
         }
     }
-
 }

@@ -1,7 +1,10 @@
 package facade;
 
 import domain.GameField;
+import domain.util.Vector2D;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class GameSystem {
@@ -48,12 +51,12 @@ public class GameSystem {
         this.field.moveBlocksRight();
     }
 
-    public void moveUp() {
+    public void moveUp()  {
         this.field.moveBlocksUp();
     }
 
-    public void moveDown() {
-        this.field.moveBlocksDown();
+    public List<Vector2D> moveDown() {
+        return  this.field.moveBlocksDown().getRight();
     }
 
     private boolean hasNoMoves() throws InterruptedException {
@@ -69,7 +72,7 @@ public class GameSystem {
 
         Thread checkDownThred = new Thread(() -> {
             System.out.println("T2");
-            if (this.field.clone().moveBlocksDown()) checkUp.set(true);
+            if (this.field.clone().moveBlocksDown().getLeft()) checkUp.set(true);
         });
 
         Thread checkLeftThred = new Thread(() -> {

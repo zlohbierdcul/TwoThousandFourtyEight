@@ -12,6 +12,7 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -19,6 +20,7 @@ import java.util.List;
 public class GUI extends JFrame {
 
     private final int SIZE = 4;
+    private HashMap<Vector2D, CustomButton> gameBlocks = new HashMap<>();
     private JTextPane titlePane = new JTextPane();
     private JTextPane scorePane = new JTextPane();
     private CustomButton startButton = new CustomButton("Start");
@@ -50,7 +52,7 @@ public class GUI extends JFrame {
     }
 
 
-    public void mainMenu() {
+    private void mainMenu() {
 
         menuContainer = new Container();
         menuContainer.setLayout(new BoxLayout(menuContainer, BoxLayout.Y_AXIS));
@@ -59,6 +61,8 @@ public class GUI extends JFrame {
         startButton = new CustomButton("Start");
         startButton.setMaximumSize(new Dimension(300, 60));
         startButton.setFont(new Font("Fira Code", Font.BOLD,24));
+        startButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        startButton.setForeground(new Color(51,51,51));
         startButton.addActionListener(actionEvent -> {
             startGame(SIZE);
         });
@@ -67,6 +71,8 @@ public class GUI extends JFrame {
         scoreButton = new CustomButton("Scores");
         scoreButton.setMaximumSize(new Dimension(300, 60));
         scoreButton.setFont(new Font("Fira Code", Font.BOLD,24));
+        scoreButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        scoreButton.setForeground(new Color(51,51,51));
         scoreButton.addActionListener(actionEvent -> {
             try {
                 scoreFrame();
@@ -79,6 +85,8 @@ public class GUI extends JFrame {
         exitButtonMenu = new CustomButton("Exit");
         exitButtonMenu.setMaximumSize(new Dimension(300, 60));
         exitButtonMenu.setFont(new Font("Fira Code", Font.BOLD,24));
+        exitButtonMenu.setAlignmentX(Component.CENTER_ALIGNMENT);
+        exitButtonMenu.setForeground(new Color(51,51,51));
         exitButtonMenu.addActionListener(actionEvent -> {
             setVisible(false);
         });
@@ -103,11 +111,11 @@ public class GUI extends JFrame {
         // adding everything to container
         menuContainer.add(Box.createRigidArea(new Dimension(getWidth(), (int) (getHeight() / 4))));
         menuContainer.add(titlePane, Component.CENTER_ALIGNMENT);
-        addAButton(startButton, menuContainer);
+        menuContainer.add(startButton);
         menuContainer.add(Box.createRigidArea(new Dimension(0, 20)));
-        addAButton(scoreButton, menuContainer);
+        menuContainer.add(scoreButton);
         menuContainer.add(Box.createRigidArea(new Dimension(0, 20)));
-        addAButton(exitButtonMenu, menuContainer);
+        menuContainer.add(exitButtonMenu);
 
         // draw this container
         this.getContentPane().removeAll();
@@ -117,6 +125,135 @@ public class GUI extends JFrame {
         this.getContentPane().setBackground(new Color(51,51,51));
     }
 
+
+    private void startGame(int size) {
+        if (mainGameThread != null) mainGameThread.interrupt();
+        // initialize GameSystem
+        gameSystem = new GameSystem(size);
+        gameSystem.startGame();
+        this.gameFrame(size, new ArrayList<>());
+        mainGameThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                addKeyListener(new KeyListener() {
+                    boolean pressed = false;
+                    @Override
+                    public void keyTyped(KeyEvent e) {
+                        System.out.println("Typed");
+                    }
+                    @Override
+                    public void keyPressed(KeyEvent e) {
+                        int keyCode = e.getKeyCode();
+                        List<Vector2D> vectors = new ArrayList<>();
+                        HashMap<Vector2D, Integer> oldfield = (HashMap<Vector2D, Integer>) gameSystem.getGameField().getField().clone();
+                        if (!pressed) {
+                            switch (keyCode) {
+                                case KeyEvent.VK_UP:
+                                    gameSystem.moveUp();
+                                    break;
+                                case KeyEvent.VK_DOWN:
+                                    vectors.addAll(gameSystem.moveDown());
+                                    break;
+                                case KeyEvent.VK_LEFT:
+                                    gameSystem.moveLeft();
+                                    break;
+                                case KeyEvent.VK_RIGHT:
+                                    gameSystem.moveRight();
+                                    break;
+                                default: {
+                                    return;
+                                }
+                            }
+                            if (gameSystem.getGameField().hasPossibleMoves()) {
+                                if (gameSystem.spawnRandomBlock()) {
+                                    gameFrame(SIZE, vectors);
+                                } else {
+                                    stopGame();
+                                    gameoverFrame();
+                                    removeKeyListener(this);
+                                }
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void keyReleased(KeyEvent e) {
+                        pressed = false;
+                    }
+                });
+            }
+        });
+        mainGameThread.start();
+    }
+
+    private void stopGame() {
+        gameSystem.stopGame();
+        this.removeKeyListener(getKeyListeners()[0]);
+        PrintWriter writer = null;
+        try {
+            writer = new PrintWriter(new BufferedWriter(new FileWriter("src/main/resources/scores", true)));
+            writer.println(gameSystem.getScore());
+            writer.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void gameoverFrame() {
+
+        gameOverContainer = new Container();
+        gameOverContainer.setLayout(new BoxLayout(gameOverContainer, BoxLayout.Y_AXIS));
+        gameOverContainer.removeAll();
+
+
+        gameOverTextPane = new JTextPane();
+        SimpleAttributeSet attributeSet = new SimpleAttributeSet();
+        StyleConstants.setBold(attributeSet, true);
+        StyleConstants.setFontSize(attributeSet, 32);
+        StyleConstants.setFontFamily(attributeSet, "Fira Code");
+        StyleConstants.setForeground(attributeSet, new Color(100,100,100));
+        StyleConstants.setAlignment(attributeSet, StyleConstants.ALIGN_CENTER);
+        StyledDocument doc = gameOverTextPane.getStyledDocument();
+        doc.setParagraphAttributes(0, doc.getLength(), attributeSet, false);
+        gameOverTextPane.setCharacterAttributes(attributeSet, true);
+        gameOverTextPane.setBackground(new Color(51,51,51));
+        gameOverTextPane.setForeground(new Color(223, 194, 26));
+        gameOverTextPane.setText("Game Over!!\n" + "Score: " + this.gameSystem.getScore());
+        gameOverTextPane.setEditable(false);
+        gameOverTextPane.setHighlighter(null);
+        gameOverTextPane.setMaximumSize(new Dimension(this.getWidth(), 150));
+
+        menuButton = new CustomButton("Menu");
+        menuButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        menuButton.setMaximumSize(new Dimension(200, 50));
+        menuButton.setFont(new Font("Fire Code", 1, 22));
+        menuButton.setForeground(new Color(80,80,80));
+        menuButton.setEnabled(true);
+        menuButton.addActionListener(ae -> { mainMenu(); });
+
+        retryButton = new CustomButton("Retry");
+        retryButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        retryButton.setMaximumSize(new Dimension(200, 50));
+        retryButton.setFont(new Font("Fire Code", 1, 22));
+        retryButton.setForeground(new Color(80,80,80));
+        retryButton.setEnabled(true);
+        retryButton.addActionListener(ae -> { startGame(SIZE); });
+
+
+        gameOverContainer.removeAll();
+        gameOverContainer.add(Box.createRigidArea(new Dimension(getWidth(), getHeight()/3)));
+        gameOverContainer.add(gameOverTextPane);
+        gameOverContainer.add(Box.createRigidArea(new Dimension(getWidth(), 50)));
+        gameOverContainer.add(menuButton);
+        gameOverContainer.add(Box.createRigidArea(new Dimension(getWidth(), 20)));
+        gameOverContainer.add(retryButton);
+
+
+        this.getContentPane().removeAll();
+        this.getContentPane().setVisible(false);
+        this.getContentPane().add(gameOverContainer);
+        this.getContentPane().setVisible(true);
+    }
 
     private void scoreFrame() throws IOException {
         BufferedReader reader = new BufferedReader(new FileReader("src/main/resources/scores"));
@@ -178,6 +315,7 @@ public class GUI extends JFrame {
         resetButton.setFont(new Font("Fire Code", Font.BOLD, 16));
         resetButton.setForeground(new Color(80,80,80));
         resetButton.addActionListener(ae -> {
+            shakeButton(resetButton);
             File scores = new File("src/main/resources/scores");
             scores.delete();
             try {
@@ -204,129 +342,14 @@ public class GUI extends JFrame {
         this.getContentPane().setVisible(true);
     }
 
-    private void startGame(int size) {
-        if (mainGameThread != null) mainGameThread.interrupt();
-        // initialize GameSystem
-        gameSystem = new GameSystem(size);
-        gameSystem.startGame();
-        this.gameFrame(size);
-        mainGameThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                addKeyListener(new KeyListener() {
-                    boolean pressed = false;
-                    @Override
-                    public void keyTyped(KeyEvent e) {
-                        System.out.println("Typed");
-                    }
-                    @Override
-                    public void keyPressed(KeyEvent e) {
-                        int keyCode = e.getKeyCode();
-                        HashMap<Vector2D, Integer> oldfield = (HashMap<Vector2D, Integer>) gameSystem.getGameField().getField().clone();
-                        if (!pressed) {
-                            switch (keyCode) {
-                                case KeyEvent.VK_UP:
-                                    gameSystem.moveUp();
-                                    break;
-                                case KeyEvent.VK_DOWN:
-                                    gameSystem.moveDown();
-                                    break;
-                                case KeyEvent.VK_LEFT:
-                                    gameSystem.moveLeft();
-                                    break;
-                                case KeyEvent.VK_RIGHT:
-                                    gameSystem.moveRight();
-                                    break;
-                                default: {
-                                    return;
-                                }
-                            }
-                            if (gameSystem.getGameField().hasPossibleMoves()) {
-                                if (gameSystem.spawnRandomBlock()) {
-                                    gameFrame(SIZE);
-                                } else {
-                                    stopGame();
-                                    gameOverMenu();
-                                    removeKeyListener(this);
-                                }
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void keyReleased(KeyEvent e) {
-                        pressed = false;
-                    }
-                });
-            }
-        });
-        mainGameThread.start();
-    }
-
-    private void gameOverMenu() {
-
-        gameOverContainer = new Container();
-        gameOverContainer.setLayout(new BoxLayout(gameOverContainer, BoxLayout.Y_AXIS));
-        gameOverContainer.removeAll();
-
-
-        gameOverTextPane = new JTextPane();
-        SimpleAttributeSet attributeSet = new SimpleAttributeSet();
-        StyleConstants.setBold(attributeSet, true);
-        StyleConstants.setFontSize(attributeSet, 32);
-        StyleConstants.setFontFamily(attributeSet, "Fira Code");
-        StyleConstants.setForeground(attributeSet, new Color(100,100,100));
-        StyleConstants.setAlignment(attributeSet, StyleConstants.ALIGN_CENTER);
-        StyledDocument doc = gameOverTextPane.getStyledDocument();
-        doc.setParagraphAttributes(0, doc.getLength(), attributeSet, false);
-        gameOverTextPane.setCharacterAttributes(attributeSet, true);
-        gameOverTextPane.setBackground(new Color(51,51,51));
-        gameOverTextPane.setForeground(new Color(223, 194, 26));
-        gameOverTextPane.setText("Game Over!!\n" + "Score: " + this.gameSystem.getScore());
-        gameOverTextPane.setEditable(false);
-        gameOverTextPane.setHighlighter(null);
-        gameOverTextPane.setMaximumSize(new Dimension(this.getWidth(), 150));
-
-        menuButton = new CustomButton("Menu");
-        menuButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        menuButton.setMaximumSize(new Dimension(200, 50));
-        menuButton.setFont(new Font("Fire Code", 1, 22));
-        menuButton.setForeground(new Color(80,80,80));
-        menuButton.setEnabled(true);
-        menuButton.addActionListener(ae -> { mainMenu(); });
-
-        retryButton = new CustomButton("Retry");
-        retryButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        retryButton.setMaximumSize(new Dimension(200, 50));
-        retryButton.setFont(new Font("Fire Code", 1, 22));
-        retryButton.setForeground(new Color(80,80,80));
-        retryButton.setEnabled(true);
-        retryButton.addActionListener(ae -> { startGame(SIZE); });
-
-
-        gameOverContainer.removeAll();
-        gameOverContainer.add(Box.createRigidArea(new Dimension(getWidth(), getHeight()/3)));
-        gameOverContainer.add(gameOverTextPane);
-        gameOverContainer.add(Box.createRigidArea(new Dimension(getWidth(), 50)));
-        gameOverContainer.add(menuButton);
-        gameOverContainer.add(Box.createRigidArea(new Dimension(getWidth(), 20)));
-        gameOverContainer.add(retryButton);
-
-
-        this.getContentPane().removeAll();
-        this.getContentPane().setVisible(false);
-        this.getContentPane().add(gameOverContainer);
-        this.getContentPane().setVisible(true);
-    }
-
-    private void gameFrame(int size) {
+    private void gameFrame(int size, List<Vector2D> vectors) {
         // Container setup
         gameContainer = new Container();
         gameContainer.setLayout(new BoxLayout(gameContainer, BoxLayout.Y_AXIS));
         gameContainer.setBackground(new Color(56, 122, 187));
 
         // GameFieldPanel setup
-        JPanel gamePanel = drawGameField();
+        JPanel gamePanel = drawGameAndScorePanel(vectors);
 
         // ExitButton setup
         exitButtonGame = new CustomButton("Exit");
@@ -354,8 +377,8 @@ public class GUI extends JFrame {
         this.getContentPane().setVisible(true);
     }
 
-    private JPanel drawGameField() {
-
+    private JPanel drawGameAndScorePanel(List<Vector2D> vectors) {
+        System.out.println(vectors);
         // ScorePane setup
         SimpleAttributeSet attributeSet = new SimpleAttributeSet();
         StyleConstants.setBold(attributeSet, true);
@@ -404,9 +427,15 @@ public class GUI extends JFrame {
 //                newButton.setContentAreaFilled(false);
                 newButton.setFocusable(false);
 
+                int finalX = x;
+                int finalY = y;
+
 
 
                 gamePanel.add(newButton);
+                if (vectors.stream().anyMatch(v -> v.equals(new Vector2D(finalX, finalY)))) {
+                    shakeButton(newButton);
+                }
             }
         }
 
@@ -415,21 +444,53 @@ public class GUI extends JFrame {
         return gamePanel;
     }
 
-    private void stopGame() {
-        gameSystem.stopGame();
-        this.removeKeyListener(getKeyListeners()[0]);
-        PrintWriter writer = null;
-        try {
-            writer = new PrintWriter(new BufferedWriter(new FileWriter("src/main/resources/scores", true)));
-            writer.println(gameSystem.getScore());
-            writer.close();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+
+    private void shakeButton(AbstractButton button) {
+        final Point point = button.getLocation();
+        final int delay = 40;
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                for (int i = 0; i < 3; i++) {
+                    try {
+
+                        button.setBorder(BorderFactory.createLineBorder(button.getBackground(), 1, true));
+                        button.setMaximumSize(new Dimension(105, 105));
+                        Thread.sleep(delay);
+                        button.setBorder(BorderFactory.createLineBorder(button.getBackground(), 3, true));
+                        button.setMaximumSize(new Dimension(106, 106));
+                        Thread.sleep(delay);
+                        button.setBorder(BorderFactory.createLineBorder(button.getBackground(), 2, true));
+                        button.setMaximumSize(new Dimension(103, 103));
+                        Thread.sleep(delay);
+                        button.setBorder(BorderFactory.createLineBorder(button.getBackground(), 1, true));
+                        button.setMaximumSize(new Dimension(100, 100));
+                        Thread.sleep(delay);
+                        button.setBorder(null);
+
+//                        moveButton(button, new Point(point.x + 2, point.y));
+//                        moveButton(button, point);
+//                        Thread.sleep(delay);
+//                        moveButton(button, new Point(point.x - 2, point.y));
+//                        Thread.sleep(delay);
+//                        moveButton(button, point);
+//                        Thread.sleep(delay);
+                    } catch (InterruptedException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }
+        };
+        Thread t = new Thread(r);
+        t.start();
     }
 
-    private static void addAButton(CustomButton button, Container container) {
-        button.setAlignmentX(Component.CENTER_ALIGNMENT);
-        container.add(button);
+    private void moveButton(AbstractButton button, final Point p) {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                button.setLocation(p);
+            }
+        });
     }
 }
